@@ -1,3 +1,2 @@
 python3-opencv
 fonts-freefont-ttf
-opencv-python-headless
