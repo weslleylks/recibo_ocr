@@ -2,3 +2,4 @@ python3-opencv
 fonts-freefont-ttf
 libgl1-mesa-glx
 libglib2.0-0
+poppler-utils
