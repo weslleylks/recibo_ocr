@@ -19,7 +19,7 @@ def redimensionar_inteligente(image, largura_alvo=2000):
     return np.ascontiguousarray(imagem_redimensionada)
     
 def processar_pdf_com_clahe(uploaded_file):
-    caminho_poppler = "C:/Users/bp569094/OneDrive - bpsplicencas.onmicrosoft.com/Área de Trabalho/poppler/poppler-25.12.0/Library/bin"
+    # caminho_poppler = "C:/Users/bp569094/OneDrive - bpsplicencas.onmicrosoft.com/Área de Trabalho/poppler/poppler-25.12.0/Library/bin"
 
     uploaded_file.seek(0)
     file_bytes = uploaded_file.read()
@@ -29,7 +29,7 @@ def processar_pdf_com_clahe(uploaded_file):
     paginas = convert_from_bytes(
         file_bytes, 
         dpi=300,
-        poppler_path=caminho_poppler
+        # poppler_path=caminho_poppler
     )
 
     imagens_processadas = []
