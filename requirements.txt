@@ -1,5 +1,0 @@
-opencv-python-headless
-python-doctr
-pdf2image
-thefuzz
-openpyxl
