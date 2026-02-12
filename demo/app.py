@@ -193,8 +193,12 @@ def main(det_archs, reco_archs):
                     # Executa o preenchimento e recebe o arquivo em memória
                     arquivo_excel = relatorio(datas, valor, empresa, local_ida, local_volta, template_local)
 
-                    st.write([arquivo_excel])
-
+                    st.write(datas)
+                    st.write(valor)
+                    st.write(empresa)
+                    st.write(local_ida)
+                    st.write(local_volta)
+                    
                     st.success("✅ Dados extraídos e planilha preparada!")
 
                     # Botão de Download
