@@ -175,7 +175,7 @@ def main(det_archs, reco_archs):
                 # Exibe o resultado na coluna da direita
                 with cols[1]:
                     # Define o caminho do template que está no seu GitHub
-                    template_local = "doctr/docs/Relatório de Reembolso.xlsx"
+                    template_local = "docs/Relatório de Reembolso.xlsx"
 
                     # Executa o preenchimento e recebe o arquivo em memória
                     arquivo_excel = relatorio(datas, valor, empresa, local_ida, local_volta, template_local)
