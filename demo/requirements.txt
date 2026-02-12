@@ -4,4 +4,3 @@ python-doctr
 pdf2image
 thefuzz
 openpyxl
-python-poppler
