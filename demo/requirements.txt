@@ -1,6 +1,7 @@
 streamlit>=1.0.0
 opencv-python-headless
-python-doctr
+python-doctr[torch]
 pdf2image
 thefuzz
 openpyxl
+numpy
