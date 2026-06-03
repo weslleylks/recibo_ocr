@@ -7,7 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # - Other packages
     build-essential \
     pkg-config \
     curl \
@@ -15,15 +14,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     unzip \
     git \
-    # - Packages to build Python
-    tar make gcc zlib1g-dev libffi-dev libssl-dev liblzma-dev libbz2-dev libsqlite3-dev \
-    # - Packages for docTR
-    libgl1-mesa-dev libsm6 libxext6 libxrender-dev libpangocairo-1.0-0 \
+    poppler-utils \
+    tar \
+    make \
+    gcc \
+    zlib1g-dev \
+    libffi-dev \
+    libssl-dev \
+    liblzma-dev \
+    libbz2-dev \
+    libsqlite3-dev \
+    libgl1 libsm6 libxext6 libxrender-dev libpangocairo-1.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python
-ARG PYTHON_VERSION=3.10.13
+ARG PYTHON_VERSION=3.11.8
 
 RUN wget http://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz && \
     tar -zxf Python-$PYTHON_VERSION.tgz && \
@@ -44,3 +50,7 @@ ARG DOCTR_REPO='mindee/doctr'
 ARG DOCTR_VERSION=main
 RUN pip3 install -U pip setuptools wheel && \
     pip3 install "python-doctr[$FRAMEWORK]@git+https://github.com/$DOCTR_REPO.git@$DOCTR_VERSION"
+
+COPY demo/requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
