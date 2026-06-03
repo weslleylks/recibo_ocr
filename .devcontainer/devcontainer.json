@@ -17,7 +17,7 @@
       ]
     }
   },
-  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && apt-get install -y libgl1 && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
+  "updateContentCommand": "if [ -f demo/packages.txt ]; then sudo apt update && sudo xargs apt install -y < demo/packages.txt; fi; if [ -f demo/requirements.txt ]; then pip3 install --user --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r demo/requirements.txt; fi; echo 'Packages installed and requirements met'",
   "postAttachCommand": {
     "server": "streamlit run demo/app.py --server.enableCORS false --server.enableXsrfProtection false"
   },

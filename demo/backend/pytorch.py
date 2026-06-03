@@ -8,6 +8,10 @@ import torch
 
 from doctr.models import ocr_predictor
 from doctr.models.predictor import OCRPredictor
+import ssl
+
+# Globally disable SSL certificate verification
+ssl._create_default_https_context = ssl._create_unverified_context
 
 DET_ARCHS = [
     "fast_base",

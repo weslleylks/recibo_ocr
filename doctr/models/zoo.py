@@ -9,7 +9,11 @@ from .detection.zoo import detection_predictor
 from .kie_predictor import KIEPredictor
 from .predictor import OCRPredictor
 from .recognition.zoo import recognition_predictor
+import os
+import certifi
 
+# Tells SSL library to use certifi's bundle
+os.environ['SSL_CERT_FILE'] = certifi.where()
 __all__ = ["ocr_predictor", "kie_predictor"]
 
 
