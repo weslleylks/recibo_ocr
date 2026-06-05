@@ -4,7 +4,3 @@ python-doctr[torch]
 pdf2image
 thefuzz
 openpyxl
-<<<<<<< HEAD
-=======
-numpy
->>>>>>> 50ce1df347578a75c4a75216f2790293cc185df6
