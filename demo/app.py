@@ -49,7 +49,17 @@ PRESETS = {
         "bin_thresh": 0.26, # Mais baixo para pegar traços finos
         "box_thresh": 0.2,
         "erosion_iter": 4 # Engrossar a letra (ajustado para não borrar demais)
-    }
+    },
+        "NF": {
+        "det_arch": "db_resnet50",
+        "reco_arch": "crnn_vgg16_bn",
+        "assume_straight_pages": False,
+        "straighten_pages": False,
+        "disable_crop_orientation": False,
+        "bin_thresh": 0.3,
+        "box_thresh": 0.2,
+        "erosion_iter": 0  # Sem erosão agressiva
+    },
 }
 
 forward_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -74,7 +84,7 @@ def main(det_archs, reco_archs):
 
     # --- 2. Barra Lateral: Botões de Ação Rápida ---
     st.sidebar.title("Tipo de Documento")
-    col_b1, col_b2, col_b3 = st.sidebar.columns(3)
+    col_b1, col_b2, col_b3, col_b4 = st.sidebar.columns(4)
     
     if col_b1.button("🚗 Uber"):
         apply_preset("Uber (Digital)")
@@ -84,6 +94,9 @@ def main(det_archs, reco_archs):
         
     if col_b3.button("📄 Padrão"):
         apply_preset("Padrao")
+
+    if col_b4.button("NF"):
+        apply_preset('NF')
 
     # --- 3. Upload e Processamento de Imagem ---
     st.sidebar.markdown("---")
@@ -184,6 +197,12 @@ def main(det_archs, reco_archs):
                     # Executa o preenchimento e recebe o arquivo em memória
                     arquivo_excel = relatorio(datas, valor, empresa, local_ida, local_volta, template_local)
 
+                    st.write(datas)
+                    st.write(valor)
+                    st.write(empresa)
+                    st.write(local_ida)
+                    st.write(local_volta)
+                    
                     st.success("✅ Dados extraídos e planilha preparada!")
 
                     # Botão de Download
