@@ -9,9 +9,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          submodules: false
       - name: Sincronizar com o HF
         uses: huggingface/hub-sync@v0.1.0
         with:
           github_repo_id: ${{ github.repository }}
-          hf_repo_id: weslleyls/reembolso
+          huggingface_repo_id: weslleyls/reembolso
           hf_token: ${{ secrets.HF_TOKEN }}
