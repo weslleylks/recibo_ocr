@@ -10,7 +10,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Sincronizar com o HF
-        uses: embraceface/hub-sync@v0.1.0
+        uses: huggingface/hub-sync@v0.1.0
         with:
           github_repo_id: ${{ github.repository }}
           embraceface_repo_id: weslleyls/reembolso
