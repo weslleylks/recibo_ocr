@@ -5,12 +5,6 @@ ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# 1. Copia o certificado da pasta do seu projeto para o diretório de certificados do Debian/Ubuntu no container
-COPY prod-ca-2021.crt /usr/local/share/ca-certificates/prod-ca-2021.crt
-
-# 2. Instala o pacote de certificados e atualiza a lista para que o sistema confie no seu .crt
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
