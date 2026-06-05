@@ -19,10 +19,7 @@ def redimensionar_inteligente(image, largura_alvo=2000):
     return np.ascontiguousarray(imagem_redimensionada)
     
 def processar_pdf_com_clahe(uploaded_file):
-<<<<<<< HEAD
     # caminho_poppler = "C:/Users/bp569094/AppData/Local/Programs/poppler/poppler-25.12.0/Library/bin"
-=======
->>>>>>> 50ce1df347578a75c4a75216f2790293cc185df6
 
     uploaded_file.seek(0)
     file_bytes = uploaded_file.read()
@@ -31,12 +28,8 @@ def processar_pdf_com_clahe(uploaded_file):
     # Recomendo 300 DPI para garantir qualidade no texto escrito à mão
     paginas = convert_from_bytes(
         file_bytes, 
-<<<<<<< HEAD
         dpi=300,
         # poppler_path=caminho_poppler
-=======
-        dpi=300
->>>>>>> 50ce1df347578a75c4a75216f2790293cc185df6
     )
 
     imagens_processadas = []
@@ -55,4 +48,3 @@ def processar_pdf_com_clahe(uploaded_file):
         imagens_processadas.append(img_final)
 
     return imagens_processadas
-
