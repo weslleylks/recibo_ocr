@@ -53,3 +53,8 @@ RUN python -m pip show \
     pdf2image \
     thefuzz \
     openpyxl
+
+    WORKDIR /app
+COPY . /app
+
+CMD ["streamlit", "run", "demo/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
