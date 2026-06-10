@@ -30,7 +30,7 @@ def parse_ranges_to_groups(ranges_str: str, n_pages: int) -> list[list[int]]:
     Lança ValueError para formatos inválidos.
     """
     if not ranges_str:
-        raise ValueError("Ranges vazios")
+        return []
     grupos = []
     for part in ranges_str.split(","):
         part = part.strip()
@@ -227,6 +227,13 @@ def main(det_archs, reco_archs):
                     index=("por_arquivo", "por_pagina", "grupos").index(st.session_state[modo_key]),
                     key=f"radio_{modo_key}",
                 )
+                
+                tipos_por_arquivo[chave] = st.selectbox(
+                    f"Tipo: {uploaded_file.name}",
+                    TIPOS_DOCUMENTO,
+                    index=0,
+                    key=f"tipo_documento_{chave}",
+                )
 
                 # Se por_pagina: permitir escolher tipo por página (default = tipo do arquivo)
                 if st.session_state[modo_key] == "por_pagina":
@@ -234,14 +241,14 @@ def main(det_archs, reco_archs):
                     try:
                         _doc_tmp = carregar_documento(uploaded_file, PRESETS["Padrao"])  # só para contar páginas
                         tipos_por_pagina_key = f"tipos_por_pagina_{chave}"
+                        default_tipo = tipos_por_arquivo.get(chave, TIPOS_DOCUMENTO[0])
                         if tipos_por_pagina_key not in st.session_state:
                             st.session_state[tipos_por_pagina_key] = [st.selectbox(
                                 f"Tipo página {i+1} ({uploaded_file.name})",
                                 TIPOS_DOCUMENTO,
-                                index=0,
+                                index=TIPOS_DOCUMENTO.index(default_tipo),
                                 key=f"{tipos_por_pagina_key}_{i}",
                             ) for i in range(len(_doc_tmp))]
-                        else:
                             # re-render selects (Streamlit exige gerar selects; mantemos valores existentes)
                             tipos_existentes = st.session_state[tipos_por_pagina_key]
                             novos = []
@@ -372,7 +379,7 @@ def main(det_archs, reco_archs):
                 format_func=lambda indice: f"{indice + 1}. {uploaded_files[indice].name}",
             )
             arquivo_preview = uploaded_files[indice_preview]
-            tipo_preview = tipos_por_arquivo[chave_arquivo(arquivo_preview, indice_preview)]
+            tipo_preview = tipos_por_arquivo.get(chave_arquivo(arquivo_preview, indice_preview), TIPOS_DOCUMENTO[0])
             preset_preview = ajustes_globais or PRESETS[tipo_preview]
 
             try:
@@ -396,7 +403,7 @@ def main(det_archs, reco_archs):
         with st.spinner("Carregando modelos e processando documentos..."):
             for indice, uploaded_file in enumerate(uploaded_files):
                 chave = chave_arquivo(uploaded_file, indice)
-                tipo_documento = tipos_por_arquivo[chave]
+                tipo_documento = tipos_por_arquivo.get(chave, TIPOS_DOCUMENTO[0])
                 preset = ajustes_globais or PRESETS[tipo_documento]
 
                 doc = carregar_documento(uploaded_file, preset)
@@ -426,9 +433,14 @@ def main(det_archs, reco_archs):
                         linhas_relatorio.append(montar_linha_relatorio(nome_pagina, tipos_por_pagina[idx], dados_pagina))
 
                 elif modo == "grupos":
-                    grupos_ranges = st.session_state.get(f"grupos_{chave}", "")
+                    grupos_ranges = st.session_state.get(f"grupos_{chave}", "").strip()
+                    if not grupos_ranges:
+                        grupos = [list(range(len(doc)))]
+                    else:
+                        grupos = parse_ranges_to_groups(grupos_ranges, len(doc))
+
                     tipos_por_grupo = st.session_state.get(f"tipos_por_grupo_{chave}", [])
-                    grupos = parse_ranges_to_groups(grupos_ranges, len(doc))
+
                     for g_idx, grupo in enumerate(grupos):
                         pages_bytes = [doc[i] for i in grupo]
                         resultado_grupo = predictor(DocumentFile.from_images(pages_bytes))
