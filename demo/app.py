@@ -316,10 +316,40 @@ def main(det_archs, reco_archs):
                         bin_thresh=preset["bin_thresh"],
                         box_thresh=preset["box_thresh"],
                     )
-                    # for num_pagina, pagina_img in enumerate(doc):
-                    resultado = predictor(doc)
-                    # st.write(f"**Análise da Página {num_pagina + 1}:**")
-                    dados_extraidos = processar_documento(resultado, tipo_documento)
+                    # Agregar resultados de todas as páginas do documento
+                    all_datas, all_valores, all_empresas, all_locais_ida, all_locais_volta = (
+                        [],
+                        [],
+                        [],
+                        [],
+                        [],
+                    )
+
+                    for pagina_img in doc:
+                        # predictor aceita um DocumentFile; enviamos uma página por vez
+                        resultado_pagina = predictor(DocumentFile.from_images([pagina_img]))
+                        d = processar_documento(resultado_pagina, tipo_documento)
+                        datas, valores, empresas, locais_ida, locais_volta = d
+
+                        if datas:
+                            all_datas.extend(datas)
+                        if valores:
+                            all_valores.extend(valores)
+                        if empresas:
+                            all_empresas.extend(empresas)
+                        if locais_ida:
+                            all_locais_ida.extend(locais_ida)
+                        if locais_volta:
+                            all_locais_volta.extend(locais_volta)
+
+                    dados_extraidos = (
+                        all_datas,
+                        all_valores,
+                        all_empresas,
+                        all_locais_ida,
+                        all_locais_volta,
+                    )
+
                     linhas_relatorio.append(
                         montar_linha_relatorio(
                             uploaded_file.name,
