@@ -23,6 +23,30 @@ ssl._create_default_https_context = ssl._create_unverified_context
 ROOT_DIR = Path(__file__).resolve().parents[1]
 TEMPLATE_LOCAL = ROOT_DIR / "docs" / "Relatório de Reembolso.xlsx"
 
+def parse_ranges_to_groups(ranges_str: str, n_pages: int) -> list[list[int]]:
+    """
+    Recebe '1-2,3,4-5' (1-based) e retorna [[0,1],[2],[3,4]] (0-based indices).
+    Valida limites (1..n_pages) e ordena páginas em cada grupo na ordem original.
+    Lança ValueError para formatos inválidos.
+    """
+    if not ranges_str:
+        raise ValueError("Ranges vazios")
+    grupos = []
+    for part in ranges_str.split(","):
+        part = part.strip()
+        if "-" in part:
+            a, b = part.split("-", 1)
+            a_i, b_i = int(a), int(b)
+            if a_i < 1 or b_i < a_i or b_i > n_pages:
+                raise ValueError("Range fora dos limites")
+            grupos.append(list(range(a_i - 1, b_i)))
+        else:
+            i = int(part)
+            if i < 1 or i > n_pages:
+                raise ValueError("Pagina fora dos limites")
+            grupos.append([i - 1])
+    return grupos
+
 # Configuracoes pre-definidas para cada tipo de documento.
 PRESETS = {
     "Padrao": {
@@ -189,12 +213,82 @@ def main(det_archs, reco_archs):
     if uploaded_files:
         with st.sidebar.expander("Tipo por documento", expanded=True):
             for indice, uploaded_file in enumerate(uploaded_files):
+                # Para cada arquivo (dentro do for indice, uploaded_file in enumerate(uploaded_files))
                 chave = chave_arquivo(uploaded_file, indice)
-                tipos_por_arquivo[chave] = st.selectbox(
-                    uploaded_file.name,
-                    TIPOS_DOCUMENTO,
-                    key=f"tipo_documento_{chave}",
+
+                # Modo de processamento: 'por_arquivo' | 'por_pagina' | 'grupos'
+                modo_key = f"modo_{chave}"
+                if modo_key not in st.session_state:
+                    st.session_state[modo_key] = "por_arquivo"
+
+                st.session_state[modo_key] = st.radio(
+                    f"Modo: {uploaded_file.name}",
+                    ("por_arquivo", "por_pagina", "grupos"),
+                    index=("por_arquivo", "por_pagina", "grupos").index(st.session_state[modo_key]),
+                    key=f"radio_{modo_key}",
                 )
+
+                # Se por_pagina: permitir escolher tipo por página (default = tipo do arquivo)
+                if st.session_state[modo_key] == "por_pagina":
+                    # garantir carregamento das imagens para saber quantas páginas existem
+                    try:
+                        _doc_tmp = carregar_documento(uploaded_file, PRESETS["Padrao"])  # só para contar páginas
+                        tipos_por_pagina_key = f"tipos_por_pagina_{chave}"
+                        if tipos_por_pagina_key not in st.session_state:
+                            st.session_state[tipos_por_pagina_key] = [st.selectbox(
+                                f"Tipo página {i+1} ({uploaded_file.name})",
+                                TIPOS_DOCUMENTO,
+                                index=0,
+                                key=f"{tipos_por_pagina_key}_{i}",
+                            ) for i in range(len(_doc_tmp))]
+                        else:
+                            # re-render selects (Streamlit exige gerar selects; mantemos valores existentes)
+                            tipos_existentes = st.session_state[tipos_por_pagina_key]
+                            novos = []
+                            for i in range(len(_doc_tmp)):
+                                default = tipos_existentes[i] if i < len(tipos_existentes) else TIPOS_DOCUMENTO[0]
+                                sel = st.selectbox(
+                                    f"Tipo página {i+1} ({uploaded_file.name})",
+                                    TIPOS_DOCUMENTO,
+                                    index=TIPOS_DOCUMENTO.index(default),
+                                    key=f"{tipos_por_pagina_key}_{i}",
+                                )
+                                novos.append(sel)
+                            st.session_state[tipos_por_pagina_key] = novos
+                    except Exception:
+                        st.warning(f"Não foi possível obter páginas para {uploaded_file.name} no momento.")
+
+                # Se grupos: permitir especificar ranges e escolher tipo por grupo
+                if st.session_state[modo_key] == "grupos":
+                    grupos_key = f"grupos_{chave}"
+                    grupos_ranges = st.text_input(
+                        f"Defina grupos (ex: 1-2,3,4-5) para {uploaded_file.name}",
+                        value=st.session_state.get(grupos_key, ""),
+                        key=f"input_{grupos_key}",
+                    )
+                    st.session_state[grupos_key] = grupos_ranges
+                    # parse e mostrar selects por grupo (apenas visual/definição)
+                    # parsing será validado no processamento; aqui apenas mostramos selects se conseguirmos parsear
+                    try:
+                        _doc_tmp = carregar_documento(uploaded_file, PRESETS["Padrao"])
+                        n_pages = len(_doc_tmp)
+                        grupos_list = parse_ranges_to_groups(grupos_ranges, n_pages)  # função auxiliar (ver abaixo)
+                        tipos_por_grupo_key = f"tipos_por_grupo_{chave}"
+                        if tipos_por_grupo_key not in st.session_state:
+                            st.session_state[tipos_por_grupo_key] = [TIPOS_DOCUMENTO[0] for _ in grupos_list]
+                        novos = []
+                        for g_idx, grp in enumerate(grupos_list):
+                            default = st.session_state[tipos_por_grupo_key][g_idx] if g_idx < len(st.session_state[tipos_por_grupo_key]) else TIPOS_DOCUMENTO[0]
+                            sel = st.selectbox(
+                                f"Tipo grupo {g_idx+1} (páginas {','.join(str(i+1) for i in grp)})",
+                                TIPOS_DOCUMENTO,
+                                index=TIPOS_DOCUMENTO.index(default),
+                                key=f"{tipos_por_grupo_key}_{g_idx}_{chave}",
+                            )
+                            novos.append(sel)
+                        st.session_state[tipos_por_grupo_key] = novos
+                    except Exception:
+                        st.info("Grupos inválidos ou sem páginas detectadas; corrija o formato.")
 
     st.sidebar.markdown("---")
     st.sidebar.title("Ajuste fino")
@@ -305,66 +399,43 @@ def main(det_archs, reco_archs):
                 tipo_documento = tipos_por_arquivo[chave]
                 preset = ajustes_globais or PRESETS[tipo_documento]
 
-                try:
-                    doc = carregar_documento(uploaded_file, preset)
-                    predictor = carregar_predictor(
-                        det_arch=preset["det_arch"],
-                        reco_arch=preset["reco_arch"],
-                        assume_straight_pages=preset["assume_straight_pages"],
-                        straighten_pages=preset["straighten_pages"],
-                        disable_crop_orientation=preset["disable_crop_orientation"],
-                        bin_thresh=preset["bin_thresh"],
-                        box_thresh=preset["box_thresh"],
-                    )
-                    # Agregar resultados de todas as páginas do documento
-                    all_datas, all_valores, all_empresas, all_locais_ida, all_locais_volta = (
-                        [],
-                        [],
-                        [],
-                        [],
-                        [],
-                    )
+                doc = carregar_documento(uploaded_file, preset)
+                predictor = carregar_predictor(
+                    det_arch=preset["det_arch"],
+                    reco_arch=preset["reco_arch"],
+                    assume_straight_pages=preset["assume_straight_pages"],
+                    straighten_pages=preset["straighten_pages"],
+                    disable_crop_orientation=preset["disable_crop_orientation"],
+                    bin_thresh=preset["bin_thresh"],
+                    box_thresh=preset["box_thresh"],
+                )
+                modo = st.session_state.get(f"modo_{chave}", "por_arquivo")
 
-                    for pagina_img in doc:
-                        # predictor aceita um DocumentFile; enviamos uma página por vez
+                if modo == "por_arquivo":
+                    # agrega todas as páginas em uma linha (comportamento atual)
+                    resultado = predictor(doc)
+                    dados_extraidos = processar_documento(resultado, tipo_documento)
+                    linhas_relatorio.append(montar_linha_relatorio(uploaded_file.name, tipo_documento, dados_extraidos))
+
+                elif modo == "por_pagina":
+                    tipos_por_pagina = st.session_state.get(f"tipos_por_pagina_{chave}", [tipo_documento] * len(doc))
+                    for idx, pagina_img in enumerate(doc):
                         resultado_pagina = predictor(DocumentFile.from_images([pagina_img]))
-                        d = processar_documento(resultado_pagina, tipo_documento)
-                        datas, valores, empresas, locais_ida, locais_volta = d
+                        dados_pagina = processar_documento(resultado_pagina, tipos_por_pagina[idx])
+                        nome_pagina = f"{uploaded_file.name} - p{idx+1}"
+                        linhas_relatorio.append(montar_linha_relatorio(nome_pagina, tipos_por_pagina[idx], dados_pagina))
 
-                        if datas:
-                            all_datas.extend(datas)
-                        if valores:
-                            all_valores.extend(valores)
-                        if empresas:
-                            all_empresas.extend(empresas)
-                        if locais_ida:
-                            all_locais_ida.extend(locais_ida)
-                        if locais_volta:
-                            all_locais_volta.extend(locais_volta)
-
-                    dados_extraidos = (
-                        all_datas,
-                        all_valores,
-                        all_empresas,
-                        all_locais_ida,
-                        all_locais_volta,
-                    )
-
-                    linhas_relatorio.append(
-                        montar_linha_relatorio(
-                            uploaded_file.name,
-                            tipo_documento,
-                            dados_extraidos,
-                        )
-                    )
-                except Exception as exc:
-                    erros_processamento.append(
-                        {
-                            "arquivo": uploaded_file.name,
-                            "tipo": tipo_documento,
-                            "erro": str(exc),
-                        }
-                    )
+                elif modo == "grupos":
+                    grupos_ranges = st.session_state.get(f"grupos_{chave}", "")
+                    tipos_por_grupo = st.session_state.get(f"tipos_por_grupo_{chave}", [])
+                    grupos = parse_ranges_to_groups(grupos_ranges, len(doc))
+                    for g_idx, grupo in enumerate(grupos):
+                        pages_bytes = [doc[i] for i in grupo]
+                        resultado_grupo = predictor(DocumentFile.from_images(pages_bytes))
+                        tipo_grp = tipos_por_grupo[g_idx] if g_idx < len(tipos_por_grupo) else tipo_documento
+                        nome_grupo = f"{uploaded_file.name} - g{g_idx+1} (pags {','.join(str(i+1) for i in grupo)})"
+                        dados_grupo = processar_documento(resultado_grupo, tipo_grp)
+                        linhas_relatorio.append(montar_linha_relatorio(nome_grupo, tipo_grp, dados_grupo))
 
                 progresso.progress((indice + 1) / len(uploaded_files))
 
