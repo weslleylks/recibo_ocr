@@ -316,15 +316,17 @@ def main(det_archs, reco_archs):
                         bin_thresh=preset["bin_thresh"],
                         box_thresh=preset["box_thresh"],
                     )
-                    resultado = predictor(doc)
-                    dados_extraidos = processar_documento(resultado, tipo_documento)
-                    linhas_relatorio.append(
-                        montar_linha_relatorio(
-                            uploaded_file.name,
-                            tipo_documento,
-                            dados_extraidos,
+                    for num_pagina, pagina_img in enumerate(doc):
+                        resultado = predictor(pagina_img)
+                        st.write(f"**Análise da Página {num_pagina + 1}:**")
+                        dados_extraidos = processar_documento(resultado, tipo_documento)
+                        linhas_relatorio.append(
+                            montar_linha_relatorio(
+                                uploaded_file.name,
+                                tipo_documento,
+                                dados_extraidos,
+                            )
                         )
-                    )
                 except Exception as exc:
                     erros_processamento.append(
                         {
