@@ -443,13 +443,13 @@ def main(det_archs, reco_archs):
 
                     for g_idx, grupo in enumerate(grupos):
                         pages_bytes = [doc[i] for i in grupo]
-                        resultado_grupo = predictor(DocumentFile.from_images(pages_bytes))
+                        resultado_grupo = predictor(pages_bytes)
                         tipo_grp = tipos_por_grupo[g_idx] if g_idx < len(tipos_por_grupo) else tipo_documento
                         nome_grupo = f"{uploaded_file.name} - g{g_idx+1} (pags {','.join(str(i+1) for i in grupo)})"
                         dados_grupo = processar_documento(resultado_grupo, tipo_grp)
                         linhas_relatorio.append(montar_linha_relatorio(nome_grupo, tipo_grp, dados_grupo))
 
-                progresso.progress((indice + 1) / len(uploaded_files))
+                progresso.progress((indice + 1) / len(doc))
 
         if linhas_relatorio:
             datas, valores, empresas, locais_ida, locais_volta = preparar_dados_relatorio(linhas_relatorio)

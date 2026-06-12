@@ -37,7 +37,15 @@ def extrair_dados_uber(result):
         for block in page.blocks:
             for line in block.lines:
                 # 1. Geometria e Texto da Linha
-                (x_min, y_min), (x_max, y_max) = line.geometry
+                if len(line.geometry) == 2:
+                    # Formato de página reta (2 pontos)
+                    (x_min, y_min), (x_max, y_max) = line.geometry
+                else:
+                    # Formato rotacionado/polígono (4 pontos)
+                    x_coords = [p[0] for p in line.geometry]
+                    y_coords = [p[1] for p in line.geometry]
+                    x_min, y_min = min(x_coords), min(y_coords)
+                    x_max, y_max = max(x_coords), max(y_coords)
                 texto_da_linha = " ".join([word.value for word in line.words]).strip()
 
                 if not empresa_identificada:
